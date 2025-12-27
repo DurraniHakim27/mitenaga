@@ -33,6 +33,12 @@ A comprehensive IoT-based energy monitoring dashboard that tracks real-time ener
 
 <img width="802" height="854" alt="image" src="https://github.com/user-attachments/assets/d3127b9a-fcc5-4a50-a548-f17c75cd4504" />
 
+<img width="693" height="938" alt="image" src="https://github.com/user-attachments/assets/f31f05fb-aff8-427a-987f-17d4ef3dd3a8" />
+
+<img width="1037" height="231" alt="image" src="https://github.com/user-attachments/assets/17016c5c-eef3-47a6-82f1-0e60bfc1be72" />
+
+
+
 
 
 ### Billing & Tariff
