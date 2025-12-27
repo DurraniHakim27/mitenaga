@@ -176,7 +176,7 @@ This project is part of a Final Year Project (FYP) for academic purposes.
 
 ## 👤 Author
 
-Muhammad Durrani Hakim Bin Mohd Fared - [My Website]([https://github.com/yourusername](https://durranihakim.netlify.app/ ))
+Muhammad Durrani Hakim Bin Mohd Fared - [My Website](https://durranihakim.netlify.app/)
 
 ## 🙏 Acknowledgments
 
