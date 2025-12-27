@@ -29,10 +29,7 @@ A comprehensive IoT-based energy monitoring dashboard that tracks real-time ener
 - **Configurable Thresholds**: Set custom warning and critical percentages
 - **Monthly Target Tracking**: Track usage against kWh or bill amount targets
 
-### Modern UI
-- **Dark Theme**: Beautiful modern dark theme with gradient backgrounds
-- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
-- **Custom Branding**: MyTenaga logo and branding throughout
+
 
 ## 🏗️ Architecture
 
