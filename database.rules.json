@@ -1,0 +1,27 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "latest": {
+      ".read": true,
+      ".write": true
+    },
+    "history": {
+      ".read": true,
+      ".write": true
+    },
+    "billing": {
+      ".read": true,
+      ".write": false
+    },
+    "aggregates": {
+      ".read": true,
+      ".write": false
+    },
+    "dailyArchive": {
+      ".read": true,
+      ".write": false
+    }
+  }
+}
+

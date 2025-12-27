@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Billing Data Checker</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Billing Data Diagnostic Tool</h1>
+    
+    <div class="section">
+        <h2>1. Check Billing Data in Realtime Database</h2>
+        <button onclick="checkBillingData()">Check Billing Data</button>
+        <div id="billing-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. Check Usage Data in Firestore</h2>
+        <p><strong>Note:</strong> This requires Firestore API access. Check manually in Firebase Console.</p>
+        <p>Go to: <a href="https://console.firebase.google.com/project/iot-energy-monitoring-sy-1d1a1/firestore" target="_blank">Firestore Console</a></p>
+        <p>Check: Collection <code>usage_monthly</code> → Document <code>2025-11</code></p>
+    </div>
+    
+    <div class="section">
+        <h2>3. Check Firestore Config</h2>
+        <p>Go to: <a href="https://console.firebase.google.com/project/iot-energy-monitoring-sy-1d1a1/firestore" target="_blank">Firestore Console</a></p>
+        <p>Check: Collection <code>config</code> → Document <code>billing</code></p>
+    </div>
+    
+    <div class="section">
+        <h2>4. Test Billing URL</h2>
+        <button onclick="testBillingURL()">Test Billing URL</button>
+        <div id="url-result"></div>
+    </div>
+
+    <script>
+        const BILLING_URL = 'https://iot-energy-monitoring-sy-1d1a1-default-rtdb.asia-southeast1.firebasedatabase.app/billing/currentMonth.json';
+        
+        async function checkBillingData() {
+            const resultDiv = document.getElementById('billing-result');
+            resultDiv.innerHTML = '<p>Checking...</p>';
+            
+            try {
+                const response = await fetch(BILLING_URL + '?t=' + Date.now());
+                const data = await response.json();
+                
+                if (data && data.totalKWh !== undefined) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h3>✅ Billing Data Exists!</h3>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                            <p><strong>Total kWh:</strong> ${data.totalKWh}</p>
+                            <p><strong>Total Payable:</strong> RM ${data.totalPayable?.toFixed(2) || 'N/A'}</p>
+                            <p><strong>Month:</strong> ${data.month || 'N/A'}</p>
+                        </div>
+                    `;
+                } else if (data === null || Object.keys(data).length === 0) {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ No Billing Data Found</h3>
+                            <p>Billing data doesn't exist in the database.</p>
+                            <p><strong>Next steps:</strong></p>
+                            <ol>
+                                <li>Check if usage data exists: Firestore → usage_monthly → 2025-11</li>
+                                <li>Check if config exists: Firestore → config → billing</li>
+                                <li>Trigger billing function: Cloud Functions → monthlyBill → TEST</li>
+                            </ol>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="warning">
+                            <h3>⚠️ Billing Data Incomplete</h3>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                            <p>Data exists but missing required fields (totalKWh).</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error Checking Billing Data</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testBillingURL() {
+            const resultDiv = document.getElementById('url-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const response = await fetch(BILLING_URL + '?t=' + Date.now());
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>URL Test Results</h3>
+                        <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                        <p><strong>URL:</strong> <code>${BILLING_URL}</code></p>
+                        <p><strong>Response OK:</strong> ${response.ok ? 'Yes' : 'No'}</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ URL Test Failed</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Auto-check on load
+        window.onload = function() {
+            checkBillingData();
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+

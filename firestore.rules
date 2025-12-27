@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read access to billing data
+    match /billing/{document=**} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    // Allow read access to usage data
+    match /usage_daily/{document} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    match /usage_monthly/{document} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    match /billing_history/{document} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    // Allow read/write to config (admin only in production)
+    match /config/{document} {
+      allow read: if true;
+      allow write: if false; // Set to true only for admin users in production
+    }
+
+    // Allow read/write to sensor names (settings)
+    match /settings/{document} {
+      allow read: if true;
+      allow write: if true; // For sensor names - can be restricted later
+    }
+  }
+}
+
+

@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyTenaga</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Firebase Firestore SDK for sensor names persistence -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <img src="logo.png" alt="MyTenaga" class="nav-brand-icon">
+            <span class="nav-brand-name">MyTenaga</span>
+        </div>
+        <ul class="top-nav-menu">
+            <li><a href="#dashboard" class="top-nav-link active" onclick="showPage('dashboard')">Dashboard</a></li>
+            <li><a href="#reports" class="top-nav-link" onclick="showPage('reports')">Reports</a></li>
+            <li><a href="#billings" class="top-nav-link" onclick="showPage('billings')">Billings</a></li>
+            <li><a href="#settings" class="top-nav-link" onclick="showPage('settings')">Settings</a></li>
+            <li><button class="btn-sensor-names" onclick="openSensorNamesModal()">Sensor Names</button></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="page-section active">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Energy Dashboard</h1>
+                    <p class="page-subtitle">Real-time monitoring of 5 PZEM-004T sensors</p>
+                    <div class="time-info">
+                        <span class="day-display" id="day-display">--</span>
+                        <span class="date-display" id="date-display">--</span>
+                        <span class="timezone-status">
+                            <span class="timezone-label" id="timezone-label">MYT (UTC+08:00)</span>
+                            <span class="sync-indicator" id="sync-indicator" title="Time sync status"></span>
+                        </span>
+                    </div>
+                </div>
+                <div id="update-timestamp" class="update-timestamp">Last updated: --:--:--</div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading-indicator" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Loading data from Firebase...</p>
+            </div>
+
+            <!-- PZEM Cards Grid -->
+            <div class="pzem-grid" id="pzem-cards-container">
+                <!-- PZEM cards will be generated dynamically -->
+            </div>
+
+            <!-- Real-time Graphs Section -->
+            <div class="graphs-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Individual Sensor Power</h3>
+                    </div>
+                    <div class="graphs-grid">
+                        <div class="graph-card">
+                            <h4 class="graph-title" id="graph-title-pzem1">PZEM 1 - Power</h4>
+                            <div class="chart-container-small">
+                                <canvas id="chart-pzem1"></canvas>
+                            </div>
+                        </div>
+                        <div class="graph-card">
+                            <h4 class="graph-title" id="graph-title-pzem2">PZEM 2 - Power</h4>
+                            <div class="chart-container-small">
+                                <canvas id="chart-pzem2"></canvas>
+                            </div>
+                        </div>
+                        <div class="graph-card">
+                            <h4 class="graph-title" id="graph-title-pzem3">PZEM 3 - Power</h4>
+                            <div class="chart-container-small">
+                                <canvas id="chart-pzem3"></canvas>
+                            </div>
+                        </div>
+                        <div class="graph-card">
+                            <h4 class="graph-title" id="graph-title-pzem4">PZEM 4 - Power</h4>
+                            <div class="chart-container-small">
+                                <canvas id="chart-pzem4"></canvas>
+                            </div>
+                        </div>
+                        <div class="graph-card">
+                            <h4 class="graph-title" id="graph-title-pzem5">PZEM 5 - Power</h4>
+                            <div class="chart-container-small">
+                                <canvas id="chart-pzem5"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Total Power - All PZEMs Combined</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-total-power"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div id="reports-section" class="page-section">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Reports & Analytics</h1>
+                    <p class="page-subtitle">View energy consumption reports and analytics</p>
+                    <p class="page-subtitle">Predicted bills at the end of the month</p>
+                </div>
+            </div>
+
+            <!-- Historical Daily Usage Chart -->
+            <div class="card" id="daily-usage-chart-card">
+                <div class="card-header">
+                    <h3 class="card-title">📈 Daily Energy Consumption - This Month</h3>
+                </div>
+                <div class="card-body">
+                    <div id="daily-usage-loading" style="text-align: center; padding: 40px; color: var(--gray-600);">
+                        <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
+                        <p>Loading daily consumption data...</p>
+                    </div>
+                    <div id="daily-usage-error" style="display: none; padding: 15px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; margin-bottom: 15px;"></div>
+                    <div id="daily-usage-content" style="display: none;">
+                        <div style="margin-bottom: 20px;">
+                            <canvas id="daily-usage-chart" height="300"></canvas>
+                        </div>
+                        <div id="daily-usage-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Energy Consumption by PZEM Chart -->
+            <div class="card" id="daily-pzem-chart-card">
+                <div class="card-header">
+                    <h3 class="card-title">📊 Daily Energy Consumption by PZEM</h3>
+                </div>
+                <div class="card-body">
+                    <div id="daily-pzem-loading" style="text-align: center; padding: 40px; color: var(--gray-600);">
+                        <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
+                        <p>Loading per-PZEM daily consumption data...</p>
+                    </div>
+                    <div id="daily-pzem-error" style="display: none; padding: 15px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; margin-bottom: 15px;"></div>
+                    <div id="daily-pzem-content" style="display: none;">
+                        <div style="margin-bottom: 20px;">
+                            <canvas id="daily-pzem-chart" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Per-PZEM Monthly Allocation Section -->
+            <div class="card" id="pzem-allocation-card">
+                <div class="card-header">
+                    <h3 class="card-title">This Month's Energy Share by PZEM</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Loading/No Data Message -->
+                    <div id="pzem-allocation-message" style="text-align: center; padding: 40px; color: var(--gray-600);">
+                        <div style="font-size: 48px; margin-bottom: 15px;">📊</div>
+                        <p style="font-size: 16px; margin-bottom: 10px;"><strong>Allocation data will appear here</strong></p>
+                        <p style="font-size: 14px; color: var(--gray-500); margin-bottom: 20px;">
+                            Per-PZEM bill allocation is calculated daily at 11:58 PM MYT.<br>
+                            Data will appear once usage accumulates and the daily calculation runs.
+                        </p>
+                        <button class="btn btn-secondary" id="calculate-allocation-btn-no-data" onclick="triggerAllocationCalculation()" style="background: var(--gray-600); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            🔄 Calculate Allocation Now
+                        </button>
+                        <div id="allocation-status-no-data" style="margin-top: 10px; font-size: 13px;"></div>
+                    </div>
+                    
+                    <!-- Chart and Summary (hidden by default) -->
+                    <div id="pzem-allocation-content" style="display: none;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+                            <!-- Pie Chart -->
+                            <div>
+                                <canvas id="pzem-allocation-chart" height="300"></canvas>
+                            </div>
+                            <!-- Summary List -->
+                            <div id="pzem-allocation-summary" style="display: flex; flex-direction: column; gap: 10px;">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        
+                        <!-- Debug Info (hidden by default, can be toggled) -->
+                        <details style="margin-top: 15px; padding: 10px; background: var(--gray-100); border-radius: 6px; font-size: 12px;">
+                            <summary style="cursor: pointer; color: var(--gray-600); font-weight: 600;">🔍 Debug: View Raw Data</summary>
+                            <pre id="pzem-allocation-debug" style="margin-top: 10px; padding: 10px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; overflow-x: auto; font-size: 11px; max-height: 200px; overflow-y: auto; color: #9ca3af;"></pre>
+                        </details>
+                        
+                        <!-- Recalculate Button (shown when data exists) -->
+                        <div style="margin-top: 20px; text-align: center; padding-top: 20px; border-top: 1px solid var(--gray-300);">
+                            <button class="btn btn-secondary" id="calculate-allocation-btn-with-data" onclick="triggerAllocationCalculation()" style="background: var(--gray-600); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                                🔄 Recalculate Allocation
+                            </button>
+                            <div id="allocation-status-with-data" style="margin-top: 10px; font-size: 13px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Energy Prediction Card -->
+            <div class="card" id="energy-prediction-card">
+                <div class="card-header">
+                    <h3 class="card-title">📊 Energy Consumption Forecast</h3>
+                    <button class="btn btn-primary btn-sm" id="predict-energy-btn" onclick="predictEnergyConsumption()">
+                        <span class="btn-icon">🔮</span>
+                        <span class="btn-text">Predict Until End of Month</span>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="prediction-loading" style="display: none; text-align: center; padding: 20px;">
+                        <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
+                        <p>Generating predictions...</p>
+                    </div>
+                    <div id="prediction-error" style="display: none; padding: 15px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; margin-bottom: 15px;"></div>
+                    <div id="prediction-summary" style="display: none; margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                            <div style="padding: 15px; background: var(--gray-100); border-radius: 6px;">
+                                <div style="font-size: 12px; color: var(--gray-600); margin-bottom: 5px;">Forecast Period</div>
+                                <div style="font-size: 18px; font-weight: 600; color: var(--text);" id="prediction-period">--</div>
+                            </div>
+                            <div style="padding: 15px; background: var(--gray-100); border-radius: 6px;">
+                                <div style="font-size: 12px; color: var(--gray-600); margin-bottom: 5px;">Total Predicted</div>
+                                <div style="font-size: 18px; font-weight: 600; color: var(--primary);" id="prediction-total">-- kWh</div>
+                            </div>
+                            <div style="padding: 15px; background: var(--gray-100); border-radius: 6px;">
+                                <div style="font-size: 12px; color: var(--gray-600); margin-bottom: 5px;">Daily Average</div>
+                                <div style="font-size: 18px; font-weight: 600; color: var(--text);" id="prediction-avg">-- kWh/day</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="prediction-chart-container" style="display: none; margin-bottom: 20px;">
+                        <canvas id="prediction-chart" height="300"></canvas>
+                    </div>
+                    <div id="prediction-table-container" style="display: none;">
+                        <h4 style="margin-bottom: 10px; font-size: 14px; color: var(--gray-600);">Daily Predictions</h4>
+                        <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--gray-300); border-radius: 6px;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead style="background: var(--gray-100); position: sticky; top: 0;">
+                                    <tr>
+                                        <th style="padding: 10px; text-align: left; font-size: 12px; font-weight: 600; color: var(--gray-700);">Date</th>
+                                        <th style="padding: 10px; text-align: left; font-size: 12px; font-weight: 600; color: var(--gray-700);">Day</th>
+                                        <th style="padding: 10px; text-align: right; font-size: 12px; font-weight: 600; color: var(--gray-700);">Predicted (kWh)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="prediction-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards for Each PZEM -->
+            <div class="pzem-grid">
+                <div id="report-pzem1" class="card report-card">
+                    <div class="card-header">
+                        <h3 class="card-title" id="report-title-pzem1">PZEM 1 Summary</h3>
+                        <div class="pzem-badge pzem-1" id="report-badge-pzem1">PZEM 1</div>
+                    </div>
+                    <div class="report-content">
+                        <div class="report-item">
+                            <span class="report-label">Total Energy:</span>
+                            <span class="report-value" id="report-energy-1">-- kWh</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Average Power:</span>
+                            <span class="report-value" id="report-avg-power-1">-- W</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Peak Power:</span>
+                            <span class="report-value" id="report-peak-power-1">-- W</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="report-pzem2" class="card report-card">
+                    <div class="card-header">
+                        <h3 class="card-title" id="report-title-pzem2">PZEM 2 Summary</h3>
+                        <div class="pzem-badge pzem-2" id="report-badge-pzem2">PZEM 2</div>
+                    </div>
+                    <div class="report-content">
+                        <div class="report-item">
+                            <span class="report-label">Total Energy:</span>
+                            <span class="report-value" id="report-energy-2">-- kWh</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Average Power:</span>
+                            <span class="report-value" id="report-avg-power-2">-- W</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Peak Power:</span>
+                            <span class="report-value" id="report-peak-power-2">-- W</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="report-pzem3" class="card report-card">
+                    <div class="card-header">
+                        <h3 class="card-title" id="report-title-pzem3">PZEM 3 Summary</h3>
+                        <div class="pzem-badge pzem-3" id="report-badge-pzem3">PZEM 3</div>
+                    </div>
+                    <div class="report-content">
+                        <div class="report-item">
+                            <span class="report-label">Total Energy:</span>
+                            <span class="report-value" id="report-energy-3">-- kWh</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Average Power:</span>
+                            <span class="report-value" id="report-avg-power-3">-- W</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Peak Power:</span>
+                            <span class="report-value" id="report-peak-power-3">-- W</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="report-pzem4" class="card report-card">
+                    <div class="card-header">
+                        <h3 class="card-title" id="report-title-pzem4">PZEM 4 Summary</h3>
+                        <div class="pzem-badge pzem-4" id="report-badge-pzem4">PZEM 4</div>
+                    </div>
+                    <div class="report-content">
+                        <div class="report-item">
+                            <span class="report-label">Total Energy:</span>
+                            <span class="report-value" id="report-energy-4">-- kWh</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Average Power:</span>
+                            <span class="report-value" id="report-avg-power-4">-- W</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Peak Power:</span>
+                            <span class="report-value" id="report-peak-power-4">-- W</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="report-pzem5" class="card report-card">
+                    <div class="card-header">
+                        <h3 class="card-title" id="report-title-pzem5">PZEM 5 Summary</h3>
+                        <div class="pzem-badge pzem-5" id="report-badge-pzem5">PZEM 5</div>
+                    </div>
+                    <div class="report-content">
+                        <div class="report-item">
+                            <span class="report-label">Total Energy:</span>
+                            <span class="report-value" id="report-energy-5">-- kWh</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Average Power:</span>
+                            <span class="report-value" id="report-avg-power-5">-- W</span>
+                        </div>
+                        <div class="report-item">
+                            <span class="report-label">Peak Power:</span>
+                            <span class="report-value" id="report-peak-power-5">-- W</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billings Section -->
+        <div id="billings-section" class="page-section">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">TNB Billings & Tariff</h1>
+                    <p class="page-subtitle">TNB Domestic Tariff (Tarif A – Residential, 2025)</p>
+                </div>
+            </div>
+
+            <!-- Billing Status Message -->
+            <div class="card" id="billing-status-card">
+                <div class="card-body">
+                    <p id="billing-status-message" style="margin: 0; padding: 15px; text-align: center; color: var(--gray-600);">
+                        <span id="billing-loading">Loading billing data...</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Forecast Bill Estimate Card -->
+            <div class="card" id="forecast-bill-card">
+                <div class="card-header forecast-card-header">
+                    <div>
+                        <div class="forecast-title-row">
+                            <h3 class="card-title">Forecast Bill – End of Month</h3>
+                            <span class="estimate-badge">ESTIMATE</span>
+                        </div>
+                        <p class="card-subtitle">If you continue using power like today, your bill is expected to be:</p>
+                    </div>
+                    <div class="forecast-number" id="forecast-bill-total">RM --</div>
+                </div>
+                <div class="card-body">
+                    <div id="forecast-bill-loading" style="text-align: center; padding: 20px;">
+                        <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
+                        <p>Calculating forecasted bill...</p>
+                    </div>
+                    <div id="forecast-bill-error" style="display: none; padding: 15px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; margin-bottom: 15px;"></div>
+                    <div id="forecast-bill-content" style="display: none;">
+                        <div class="forecast-kpi-grid">
+                            <div class="forecast-kpi-card">
+                                <div class="forecast-kpi-label">Predicted Monthly Usage</div>
+                                <div class="forecast-kpi-value" id="forecast-bill-kwh">-- kWh</div>
+                            </div>
+                            <div class="forecast-kpi-card">
+                                <div class="forecast-kpi-label">Estimated Bill</div>
+                                <div class="forecast-kpi-value" id="forecast-bill-estimate">RM --</div>
+                            </div>
+                            <div class="forecast-kpi-card">
+                                <div class="forecast-kpi-label">Remaining Bill</div>
+                                <div class="forecast-kpi-value" id="forecast-bill-remaining">RM --</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary forecast-toggle" id="forecast-bill-toggle">
+                            <span class="btn-icon">🔍</span>
+                            <span class="btn-text">View detailed forecast breakdown</span>
+                        </button>
+                        <div id="forecast-bill-details" style="display: none; margin-top: 15px;">
+                            <div class="forecast-breakdown-row">
+                                <span>Estimated Energy Charge (Caj Tenaga)</span>
+                                <strong id="forecast-energy-charge">RM --</strong>
+                            </div>
+                            <div class="forecast-breakdown-row">
+                                <span>Estimated Capacity Charge (Caj Kapasiti)</span>
+                                <strong id="forecast-capacity-charge">RM --</strong>
+                            </div>
+                            <div class="forecast-breakdown-row">
+                                <span>Estimated Network Charge (Caj Rangkaian)</span>
+                                <strong id="forecast-network-charge">RM --</strong>
+                            </div>
+                            <div class="forecast-breakdown-row">
+                                <span>Estimated Retail Service Charge (Caj Peruncitan)</span>
+                                <strong id="forecast-retail-charge">RM --</strong>
+                            </div>
+                            <div class="forecast-breakdown-row">
+                                <span>Estimated AFA (Additional Fixed Adjustment)</span>
+                                <strong id="forecast-afa">RM --</strong>
+                            </div>
+                            <div class="forecast-breakdown-row">
+                                <span>Estimated EECI Rebate (Insentif Cekap Tenaga)</span>
+                                <strong id="forecast-eeci">RM --</strong>
+                            </div>
+                            <div class="forecast-breakdown-row">
+                                <span>Estimated KWTBB (1.6%)</span>
+                                <strong id="forecast-kwtbb">RM --</strong>
+                            </div>
+                            <div class="forecast-breakdown-row">
+                                <span>Estimated Service Tax (8%)</span>
+                                <strong id="forecast-service-tax">RM --</strong>
+                            </div>
+                            <div class="forecast-breakdown-row total">
+                                <span>Estimated TNB Bill (End of Month)</span>
+                                <strong id="forecast-total-payable">RM --</strong>
+                            </div>
+                            <p class="forecast-note">
+                                Note: This is an estimate based on forecasted monthly usage and TNB Domestic Tariff A rules. Actual TNB bill may differ slightly.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Calculate Bill Button Card (shown when no billing data) -->
+            <div class="card" id="calculate-bill-card-no-data">
+                <div class="card-body" style="text-align: center;">
+                    <p style="margin: 0 0 15px 0; color: var(--gray-600);">
+                        Calculate billing for the current month based on accumulated usage data.
+                    </p>
+                    <button class="btn btn-primary" id="calculate-bill-btn-no-data" onclick="calculateBillNow()">
+                        <span class="btn-icon">🧮</span>
+                        <span class="btn-text">Calculate Bill Now</span>
+                    </button>
+                    <div id="calculate-bill-status-no-data" style="margin-top: 10px; font-size: 13px; color: var(--gray-600);"></div>
+                </div>
+            </div>
+
+            <!-- Current Bill Card -->
+            <div class="card receipt-card" id="current-bill-card" style="display: none;">
+                <div class="receipt-header">
+                    <div class="receipt-logo">
+                        <img src="logo.png" alt="MyTenaga" class="receipt-logo-img">
+                        <span class="receipt-logo-text">MyTenaga</span>
+                    </div>
+                    <div class="receipt-title">Electricity Bill</div>
+                    <div class="receipt-subtitle" id="bill-month">Month: --</div>
+                </div>
+                <div class="receipt-body">
+                    <div class="receipt-section">
+                        <div class="receipt-line">
+                            <span class="receipt-label">
+                                Total Usage
+                                <span class="info-icon" data-info="Total energy consumed in kilowatt-hours (kWh) for this billing period.">ℹ️</span>
+                            </span>
+                            <span class="receipt-value" id="bill-total-kwh">-- kWh</span>
+                        </div>
+                    </div>
+                    
+                    <div class="receipt-divider"></div>
+                    
+                    <div class="receipt-section">
+                        <div class="receipt-line">
+                            <span class="receipt-label">
+                                Energy Charge (Caj Tenaga)
+                                <span class="info-icon" data-info="Base charge for electricity consumption. Rate: RM 0.2703/kWh (standard) or RM 0.3703/kWh (usage >1500 kWh).">ℹ️</span>
+                            </span>
+                            <span class="receipt-value" id="bill-energy-charge">RM --</span>
+                        </div>
+                        <div class="receipt-line">
+                            <span class="receipt-label">
+                                Capacity Charge (Caj Kapasiti)
+                                <span class="info-icon" data-info="Charge for maintaining the capacity to supply electricity. Rate: RM 0.0455/kWh.">ℹ️</span>
+                            </span>
+                            <span class="receipt-value" id="bill-capacity-charge">RM --</span>
+                        </div>
+                        <div class="receipt-line">
+                            <span class="receipt-label">
+                                Network Charge (Caj Rangkaian)
+                                <span class="info-icon" data-info="Charge for maintaining the electricity distribution network. Rate: RM 0.1285/kWh.">ℹ️</span>
+                            </span>
+                            <span class="receipt-value" id="bill-network-charge">RM --</span>
+                        </div>
+                        <div class="receipt-line">
+                            <span class="receipt-label">
+                                Retail Service Charge (Caj Peruncitan)
+                                <span class="info-icon" data-info="Fixed monthly charge for retail services. RM 10.00/month for usage ≥600 kWh, waived for usage <600 kWh.">ℹ️</span>
+                            </span>
+                            <span class="receipt-value" id="bill-retail-charge">RM --</span>
+                        </div>
+                        <div class="receipt-line">
+                            <span class="receipt-label">
+                                AFA (Additional Fixed Adjustment)
+                                <span class="info-icon" data-info="Adjustment factor that can be positive or negative. Only applies to usage ≥600 kWh. Default: -RM 0.065/kWh (rebate).">ℹ️</span>
+                            </span>
+                            <span class="receipt-value" id="bill-afa">RM --</span>
+                        </div>
+                        <div class="receipt-line incentive-line">
+                            <span class="receipt-label">
+                                EECI Rebate (Insentif Cekap Tenaga)
+                                <span class="info-icon" data-info="Energy efficiency incentive rebate. Tiered rebate up to -RM 0.25/kWh for usage <1000 kWh. No rebate for usage >1000 kWh.">ℹ️</span>
+                            </span>
+                            <span class="receipt-value incentive" id="bill-eeci">RM --</span>
+                        </div>
+                    </div>
+                    
+                    <div class="receipt-divider"></div>
+                    
+                    <div class="receipt-section">
+                        <div class="receipt-line">
+                            <span class="receipt-label">
+                                Subtotal
+                                <span class="info-icon" data-info="Sum of all charges before taxes and surcharges.">ℹ️</span>
+                            </span>
+                            <span class="receipt-value" id="bill-subtotal">RM --</span>
+                        </div>
+                        <div class="receipt-line">
+                            <span class="receipt-label">
+                                KWTBB (1.6%)
+                                <span class="info-icon" data-info="Kumpulan Wang Tenaga Boleh Baharu (Renewable Energy Fund). 1.6% surcharge applied to subtotal for usage >300 kWh.">ℹ️</span>
+                            </span>
+                            <span class="receipt-value" id="bill-kwtbb">RM --</span>
+                        </div>
+                        <div class="receipt-line">
+                            <span class="receipt-label">
+                                Service Tax (8%)
+                                <span class="info-icon" data-info="Government service tax. 8% applied to (Subtotal + KWTBB) for usage >600 kWh.">ℹ️</span>
+                            </span>
+                            <span class="receipt-value" id="bill-service-tax">RM --</span>
+                        </div>
+                    </div>
+                    
+                    <div class="receipt-divider thick"></div>
+                    
+                    <div class="receipt-section">
+                        <div class="receipt-line total-line">
+                            <span class="receipt-label">Current Bill</span>
+                            <span class="receipt-value total" id="bill-total-payable">RM --</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="receipt-footer">
+                    <div class="receipt-note">Thank you for using MyTenaga Energy Monitoring</div>
+                    <div class="receipt-date" id="bill-calculated-date">Calculated: --</div>
+                </div>
+            </div>
+
+            <!-- Recalculate Bill Button (shown when billing data exists) -->
+            <div class="card" id="calculate-bill-card-with-data" style="display: none; margin-top: 20px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                <div class="card-body" style="text-align: center;">
+                    <button class="btn btn-secondary" id="calculate-bill-btn-with-data" onclick="calculateBillNow()" style="background: var(--gray-600); color: white; border: none;">
+                        <span class="btn-icon">🔄</span>
+                        <span class="btn-text">Recalculate Bill</span>
+                    </button>
+                    <div id="calculate-bill-status-with-data" style="margin-top: 10px; font-size: 13px; color: var(--gray-600);"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Tariff Structure</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="tariff-table">
+                            <thead>
+                                <tr>
+                                    <th>Monthly Usage (kWh)</th>
+                                    <th>Caj Tenaga (RM/kWh)</th>
+                                    <th>Caj Kapasiti (RM/kWh)</th>
+                                    <th>Caj Rangkaian (RM/kWh)</th>
+                                    <th>Caj Peruncitan</th>
+                                    <th>Cukai Perkhidmatan</th>
+                                    <th>KWTBB</th>
+                                    <th>Insentif Cekap Tenaga (RM/kWh)</th>
+                                    <th>Notes / Conditions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>100</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="not-applicable">❌ Waived</td><td class="incentive">-0.25</td><td>Below 200 kWh, highest incentive</td></tr>
+                                <tr><td>150</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="not-applicable">❌ Waived</td><td class="incentive">-0.25</td><td>Within 0–200 kWh range</td></tr>
+                                <tr><td>200</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="not-applicable">❌ Waived</td><td class="incentive">-0.25</td><td>Max of first incentive tier</td></tr>
+                                <tr><td>250</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="not-applicable">❌ Waived</td><td class="incentive">-0.245</td><td>201–250 kWh range</td></tr>
+                                <tr><td>300</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="not-applicable">❌ Waived</td><td class="incentive">-0.225</td><td>251–300 kWh range</td></tr>
+                                <tr><td>350</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.21</td><td>301–350 kWh range</td></tr>
+                                <tr><td>400</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.17</td><td>351–400 kWh range</td></tr>
+                                <tr><td>450</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.145</td><td>401–450 kWh range</td></tr>
+                                <tr><td>500</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.12</td><td>451–500 kWh range</td></tr>
+                                <tr><td>550</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.105</td><td>501–550 kWh range</td></tr>
+                                <tr><td>600</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>Waived</td><td class="not-applicable">❌ Not applicable</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.09</td><td>551–600 kWh range</td></tr>
+                                <tr><td>650</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.075</td><td>601–650 kWh range</td></tr>
+                                <tr><td>700</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.055</td><td>651–700 kWh range</td></tr>
+                                <tr><td>750</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.045</td><td>701–750 kWh range</td></tr>
+                                <tr><td>800</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.04</td><td>751–800 kWh range</td></tr>
+                                <tr><td>850</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.025</td><td>801–850 kWh range</td></tr>
+                                <tr><td>900</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.01</td><td>851–900 kWh range</td></tr>
+                                <tr><td>950</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.005</td><td>901–1000 kWh range</td></tr>
+                                <tr><td>1000</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td class="incentive">-0.005</td><td>Last tier of EECI incentive</td></tr>
+                                <tr><td>1100</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td>0</td><td>No incentive beyond 1000 kWh</td></tr>
+                                <tr><td>1200</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td>0</td><td></td></tr>
+                                <tr><td>1300</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td>0</td><td></td></tr>
+                                <tr><td>1400</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td>0</td><td></td></tr>
+                                <tr><td>1500</td><td>0.2703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td>0</td><td></td></tr>
+                                <tr class="high-use"><td>&gt;1500</td><td>0.3703</td><td>0.0455</td><td>0.1285</td><td>RM10.00</td><td class="applicable">✅ 8% applies</td><td class="applicable">✅ 1.6%</td><td>0</td><td>High-use tier, no EECI, higher energy rate</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Tariff Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Caj Tenaga (Energy Charge):</span>
+                            <span class="info-value">RM 0.2703/kWh (standard), RM 0.3703/kWh (&gt;1500 kWh)</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Caj Kapasiti (Capacity Charge):</span>
+                            <span class="info-value">RM 0.0455/kWh</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Caj Rangkaian (Network Charge):</span>
+                            <span class="info-value">RM 0.1285/kWh</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Caj Peruncitan (Retail Service Charge):</span>
+                            <span class="info-value">Waived for &lt;600 kWh, RM 10.00/month for ≥600 kWh</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cukai Perkhidmatan (Service Tax):</span>
+                            <span class="info-value">8% applies for usage &gt;600 kWh</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">KWTBB (1.6%):</span>
+                            <span class="info-value">Applies for usage &gt;300 kWh</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Insentif Cekap Tenaga (EECI):</span>
+                            <span class="info-value">Rebate up to -RM 0.25/kWh for usage &lt;1000 kWh</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings-section" class="page-section">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">System Settings</h1>
+                    <p class="page-subtitle">Configure system parameters and email alerts</p>
+                </div>
+            </div>
+
+            <!-- App Settings Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Application Settings</h3>
+                </div>
+                <div class="card-body">
+                    <div id="settings-loading" style="text-align: center; padding: 20px;">
+                        <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
+                        <p>Loading settings...</p>
+                    </div>
+                    <div id="settings-error" style="display: none; padding: 15px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; margin-bottom: 15px;"></div>
+                    <form id="app-settings-form" style="display: none;">
+                        <div class="settings-form-group">
+                            <label for="ownerEmail" class="settings-label">Owner Email</label>
+                            <input type="email" id="ownerEmail" class="settings-input" placeholder="your-email@example.com" required>
+                            <small class="settings-hint">Email address to receive energy consumption alerts</small>
+                        </div>
+
+                        <div class="settings-form-group">
+                            <label class="settings-label">
+                                <input type="checkbox" id="emailAlertsEnabled" class="settings-checkbox">
+                                Enable Email Alerts
+                            </label>
+                            <small class="settings-hint">Send email notifications when energy usage reaches warning or critical thresholds</small>
+                        </div>
+
+                        <div class="settings-form-group">
+                            <label for="monthlyTargetType" class="settings-label">Monthly Target Type</label>
+                            <select id="monthlyTargetType" class="settings-select">
+                                <option value="kwh">kWh (Energy Usage)</option>
+                                <option value="bill">Bill (RM)</option>
+                            </select>
+                            <small class="settings-hint">Choose whether to track target by energy consumption (kWh) or bill amount (RM)</small>
+                        </div>
+
+                        <div class="settings-form-group">
+                            <label for="monthlyTargetValue" class="settings-label">Monthly Target Value</label>
+                            <input type="number" id="monthlyTargetValue" class="settings-input" step="0.01" min="0" placeholder="e.g., 500" required>
+                            <small class="settings-hint">Target value for the month (in kWh or RM depending on target type)</small>
+                        </div>
+
+                        <div class="settings-form-group">
+                            <label for="warnPercent" class="settings-label">Warning Threshold (%)</label>
+                            <input type="number" id="warnPercent" class="settings-input" step="1" min="0" max="100" value="80" required>
+                            <small class="settings-hint">Send warning email when predicted usage reaches this percentage of target</small>
+                        </div>
+
+                        <div class="settings-form-group">
+                            <label for="criticalPercent" class="settings-label">Critical Threshold (%)</label>
+                            <input type="number" id="criticalPercent" class="settings-input" step="1" min="0" max="100" value="100" required>
+                            <small class="settings-hint">Send critical email when predicted usage reaches this percentage of target</small>
+                        </div>
+
+                        <div class="settings-form-group">
+                            <label class="settings-label">
+                                <input type="checkbox" id="includePzemBreakdownInEmail" class="settings-checkbox">
+                                Include PZEM Breakdown in Critical Emails
+                            </label>
+                            <small class="settings-hint">Include per-PZEM energy breakdown in critical threshold emails</small>
+                        </div>
+
+                        <div class="settings-form-group">
+                            <label for="AFA_rate" class="settings-label">AFA Rate (RM/kWh)</label>
+                            <input type="number" id="AFA_rate" class="settings-input" step="0.001" value="-0.065" required>
+                            <small class="settings-hint">Additional Fixed Adjustment rate. Default: -0.065 (rebate). Only applies if usage ≥ 600 kWh.</small>
+                        </div>
+
+                        <div class="settings-form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="btn-icon">💾</span>
+                                <span class="btn-text">Save Settings</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="loadAppSettings()">
+                                <span class="btn-icon">🔄</span>
+                                <span class="btn-text">Reset</span>
+                            </button>
+                        </div>
+                        <div id="settings-save-status" style="margin-top: 10px; font-size: 13px;"></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Manual Daily PZEM Data Entry -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📝 Manual Daily PZEM Data Entry</h3>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                        Manually add or update daily energy consumption data for each PZEM sensor. 
+                        This is useful for entering historical data or correcting values.
+                    </p>
+                    
+                    <div id="daily-pzem-entry-loading" style="display: none; text-align: center; padding: 20px;">
+                        <div class="loading-spinner" style="margin: 0 auto 10px;"></div>
+                        <p>Saving...</p>
+                    </div>
+                    <div id="daily-pzem-entry-error" style="display: none; padding: 15px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; margin-bottom: 15px;"></div>
+                    <div id="daily-pzem-entry-success" style="display: none; padding: 15px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: #10b981; margin-bottom: 15px;"></div>
+                    
+                    <form id="daily-pzem-entry-form">
+                        <div class="settings-form-group">
+                            <label for="entry-date" class="settings-label">Date</label>
+                            <input type="date" id="entry-date" class="settings-input" required>
+                            <small class="settings-hint">Select the date for this entry (format: YYYY-MM-DD)</small>
+                        </div>
+
+                        <div class="settings-form-group">
+                            <label for="entry-pzem" class="settings-label">PZEM Sensor</label>
+                            <select id="entry-pzem" class="settings-select" required>
+                                <option value="">Select PZEM...</option>
+                                <option value="pzem1">PZEM 1</option>
+                                <option value="pzem2">PZEM 2</option>
+                                <option value="pzem3">PZEM 3</option>
+                                <option value="pzem4">PZEM 4</option>
+                                <option value="pzem5">PZEM 5</option>
+                            </select>
+                            <small class="settings-hint">Select which PZEM sensor this data is for</small>
+                        </div>
+
+                        <div class="settings-form-group">
+                            <label for="entry-kwh" class="settings-label">Energy Consumption (kWh)</label>
+                            <input type="number" id="entry-kwh" class="settings-input" step="0.001" min="0" placeholder="0.000" required>
+                            <small class="settings-hint">Enter the total kWh consumed by this PZEM on the selected date</small>
+                        </div>
+
+                        <div class="settings-form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="btn-icon">💾</span>
+                                <span class="btn-text">Save Entry</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="clearDailyPzemEntryForm()">
+                                <span class="btn-icon">🔄</span>
+                                <span class="btn-text">Clear</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
+                        <h4 style="margin-bottom: 15px; font-size: 16px; color: var(--text-primary);">📋 Batch Entry (CSV Format)</h4>
+                        <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;">
+                            Enter multiple entries at once. Format: one entry per line as <code>date,pzemId,kwh</code><br>
+                            Example:<br>
+                            <code style="display: block; margin-top: 5px; padding: 8px; background: var(--card-bg); border-radius: 4px;">
+                                2025-11-30,pzem1,5.234<br>
+                                2025-11-30,pzem2,3.456<br>
+                                2025-11-30,pzem3,2.789
+                            </code>
+                        </p>
+                        <textarea id="batch-entry-textarea" class="settings-input" rows="10" placeholder="2025-11-30,pzem1,5.234&#10;2025-11-30,pzem2,3.456&#10;2025-11-30,pzem3,2.789" style="font-family: monospace; font-size: 13px;"></textarea>
+                        <div class="settings-form-actions" style="margin-top: 15px;">
+                            <button type="button" class="btn btn-primary" onclick="saveBatchDailyPzemEntries()">
+                                <span class="btn-icon">📦</span>
+                                <span class="btn-text">Save Batch Entries</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Firebase Configuration</h3>
+                </div>
+                <div class="settings-content">
+                    <p>Firebase integration is handled in script.js. Update Firebase config there.</p>
+                    <p class="settings-note">Note: Ensure your Firebase Realtime Database structure supports PZEM1-PZEM5 nodes.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensor Names Modal -->
+    <div id="sensor-names-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Sensor Names</h2>
+                <button class="modal-close" onclick="closeSensorNamesModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-note">Names are saved to Firestore. If not signed in, names are stored locally only.</p>
+                <div id="sensor-names-list" class="sensor-names-list">
+                    <!-- Sensor name inputs will be generated here -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="saveSensorNames()">Save</button>
+                    <button class="btn btn-secondary" onclick="resetSensorNames()">Reset to Defaults</button>
+                </div>
+                <div class="modal-timestamp" id="sensor-names-timestamp"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "balance": 45.00,
+  "voltage": 231.2,
+  "current": 0.412,
+  "power": 95.4,
+  "energy": 12.789,
+  "faultDetected": false,
+  "theftDetected": false,
+  "relayState": true,
+  "overVoltageThreshold": 260.0,
+  "overCurrentThreshold": 10.0,
+  "theftCurrentThreshold": 0.020,
+  "minimumBalance": 0.0,
+  "costPerKWh": 0.20
+}
+
+
