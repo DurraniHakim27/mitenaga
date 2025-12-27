@@ -1,4 +1,4 @@
-# MyTenaga - Energy Monitoring System with AI Analytics
+<img width="1149" height="661" alt="image" src="https://github.com/user-attachments/assets/75acbeb6-c09e-4ded-a76f-d6e31e6dcb8c" /># MyTenaga - Energy Monitoring System with AI Analytics
 
 A comprehensive IoT-based energy monitoring dashboard that tracks real-time energy consumption from multiple PZEM-004T sensors, provides detailed analytics, billing calculations, and AI-powered energy consumption predictions.
 
@@ -11,6 +11,9 @@ A comprehensive IoT-based energy monitoring dashboard that tracks real-time ener
 - **Real-Time Dashboard**: Live power, voltage, current, and energy readings
 - **Interactive Charts**: Dynamic Chart.js visualizations for real-time and historical data
 - **Sensor Customization**: Customizable sensor names stored in Firestore
+
+<img width="1811" height="429" alt="dashboard1" src="https://github.com/user-attachments/assets/96ce41c7-2ab7-4dd4-9d76-eaa53c33edc9" />
+
 
 ### Analytics & Reports
 - **Daily Energy Consumption**: Historical daily kWh consumption charts
