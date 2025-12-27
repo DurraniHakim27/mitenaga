@@ -4,6 +4,9 @@ A comprehensive IoT-based energy monitoring dashboard that tracks real-time ener
 
 ![MyTenaga Logo](public/Mytenagafull.png)
 
+<img width="497" height="502" alt="prototype123-removebg-preview" src="https://github.com/user-attachments/assets/c1fffcf7-2d2d-4b08-8497-a6764ecef037" />
+
+
 ## 🌟 Features
 
 ### Real-Time Monitoring
@@ -14,6 +17,11 @@ A comprehensive IoT-based energy monitoring dashboard that tracks real-time ener
 
 <img width="1811" height="429" alt="dashboard1" src="https://github.com/user-attachments/assets/96ce41c7-2ab7-4dd4-9d76-eaa53c33edc9" />
 
+<img width="1627" height="537" alt="image" src="https://github.com/user-attachments/assets/01244c1a-121b-440a-b3ad-e1d6c1580b04" />
+
+<img width="1129" height="632" alt="image" src="https://github.com/user-attachments/assets/cbdfc8d8-b51e-4648-963a-c6493b370e26" />
+
+
 
 ### Analytics & Reports
 - **Daily Energy Consumption**: Historical daily kWh consumption charts
@@ -21,20 +29,36 @@ A comprehensive IoT-based energy monitoring dashboard that tracks real-time ener
 - **Monthly Allocation**: Pie charts and summaries showing energy share by PZEM
 - **Energy Forecast**: XGBoost ML model predictions for end-of-month consumption
 
+<img width="957" height="633" alt="image" src="https://github.com/user-attachments/assets/fcb03f14-befc-4f93-ba1a-a8fad062b32f" />
+
+<img width="802" height="854" alt="image" src="https://github.com/user-attachments/assets/d3127b9a-fcc5-4a50-a548-f17c75cd4504" />
+
+
+
 ### Billing & Tariff
 - **TNB Domestic Tariff A**: Accurate billing calculations based on Malaysian TNB rates
 - **Current Month Bill**: Detailed breakdown of all charges (Energy, Capacity, Network, etc.)
 - **Forecast Bill**: Predicted end-of-month bill based on current usage patterns
 - **Per-PZEM Allocation**: Bill allocation breakdown by sensor
 
+<img width="502" height="830" alt="image" src="https://github.com/user-attachments/assets/07ee44c0-fe20-4af0-b671-7d3a2752c4ec" />
+
+
 ### Smart Alerts
 - **Email Notifications**: Automated alerts when energy usage reaches warning/critical thresholds
 - **Configurable Thresholds**: Set custom warning and critical percentages
 - **Monthly Target Tracking**: Track usage against kWh or bill amount targets
 
+<img width="560" height="593" alt="image" src="https://github.com/user-attachments/assets/361860e7-0e85-4bdd-92a2-9688eb92b45b" />
+
+<img width="564" height="781" alt="image" src="https://github.com/user-attachments/assets/4203ff2f-cf50-4949-92a9-c04f69142afc" />
+
 
 
 ## 🏗️ Architecture
+
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/5434499c-d91c-43b0-808e-3538fb530ca0" />
+
 
 ### Frontend
 - **HTML/CSS/JavaScript**: Vanilla web technologies
