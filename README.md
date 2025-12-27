@@ -1,4 +1,4 @@
-# MyTenaga - Smart Energy Monitoring System
+# MyTenaga - Energy Monitoring System with AI Analytics
 
 A comprehensive IoT-based energy monitoring dashboard that tracks real-time energy consumption from multiple PZEM-004T sensors, provides detailed analytics, billing calculations, and AI-powered energy consumption predictions.
 
