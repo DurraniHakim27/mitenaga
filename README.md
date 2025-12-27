@@ -176,7 +176,7 @@ This project is part of a Final Year Project (FYP) for academic purposes.
 
 ## 👤 Author
 
-Your Name - [Your GitHub](https://github.com/yourusername)
+Muhammad Durrani Hakim Bin Mohd Fared - [My Website]([https://github.com/yourusername](https://durranihakim.netlify.app/))
 
 ## 🙏 Acknowledgments
 
